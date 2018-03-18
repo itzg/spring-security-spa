@@ -1,0 +1,73 @@
+# Java Maven CircleCI 2.0 configuration file
+#
+# Check https://circleci.com/docs/2.0/language-java/ for more details
+#
+defaults: &defaults
+  docker:
+    - image: circleci/openjdk:8-jdk
+
+  working_directory: ~/repo
+
+  environment:
+    MAVEN_OPTS: -Xmx3200m
+
+version: 2
+jobs:
+  build:
+    <<: *defaults
+
+    steps:
+      - checkout
+
+      - restore_cache:
+          keys:
+          - v1-dependencies-{{ checksum "pom.xml" }}
+          # fallback to using the latest cache if no exact match is found
+          - v1-dependencies-
+
+      - run: mvn -s settings.xml dependency:go-offline
+
+      - save_cache:
+          paths:
+            - ~/.m2
+          key: v1-dependencies-{{ checksum "pom.xml" }}
+
+      - run: mvn -s settings.xml integration-test
+
+  release:
+    <<: *defaults
+
+    steps:
+      - checkout
+
+      - run:
+          name: Checking if this is a release build
+          command: |
+            if [[ $RELEASE && $NEXT ]]; then
+              if [[ $GIT_USER_EMAIL ]]; then git config --global user.email "$GIT_USER_EMAIL" ; fi
+              if [[ $GIT_USER_NAME ]]; then git config --global user.name "$GIT_USER_NAME" ; fi
+              mvn -B release:prepare -DreleaseVersion=$RELEASE -DdevelopmentVersion=$NEXT
+            else
+              echo "Release skipped. Use this to perform a release:
+              curl -X POST -H \"Content-Type: application/json\" -d '{
+                  \"build_parameters\": {
+                      \"CIRCLE_JOB\": \"release\",
+                      \"RELEASE\": \"1.1.1\",
+                      \"NEXT\": \"1.2-SNAPSHOT\",
+                  }
+              }' \"https://circleci.com/api/v1.1/project/github/ORG/PROJECT/tree/master?circle-token=TOKEN\"
+              "
+            fi
+
+workflows:
+  version: 2
+  main:
+    jobs:
+      - build
+
+      - release:
+          filters:
+            tags:
+              only: /^\d+\.\d+\.\d+/
+            branches:
+              ignore: /.*/
