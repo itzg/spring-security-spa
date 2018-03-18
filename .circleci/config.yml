@@ -62,13 +62,20 @@ jobs:
               "
             fi
 
+  deploy:
+    <<: *defaults
+    steps:
+      - checkout
+
+      - run: mvn -s settings.xml deploy
+
 workflows:
   version: 2
   main:
     jobs:
       - build
 
-      - release:
+      - deploy:
           filters:
             tags:
               only: /^\d+\.\d+\.\d+/
