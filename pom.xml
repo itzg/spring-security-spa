@@ -20,7 +20,7 @@
 
     <groupId>me.itzg</groupId>
     <artifactId>spring-security-spa</artifactId>
-    <version>1.0.1</version>
+    <version>1.1-SNAPSHOT</version>
 
     <name>Spring Security SPA-support</name>
     <description>Provides helper filters and classes for Single Page (web) Applications backed by Spring Web Security</description>
@@ -41,7 +41,7 @@
     <scm>
         <connection>scm:git:git@github.com:itzg/spring-security-spa.git</connection>
         <developerConnection>scm:git:git@github.com:itzg/spring-security-spa.git</developerConnection>
-        <tag>1.0.1</tag>
+        <tag>HEAD</tag>
     </scm>
 
     <distributionManagement>
