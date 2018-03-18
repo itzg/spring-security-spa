@@ -46,6 +46,15 @@
         <tag>HEAD</tag>
     </scm>
 
+    <distributionManagement>
+        <repository>
+            <id>bintray-artifacts</id>
+            <name>itzgeoff-artifacts</name>
+            <!--suppress MavenModelInspection -->
+            <url>https://api.bintray.com/maven/${env.BINTRAY_ORG}/${env.BINTRAY_REPO}/${project.artifactId}/;publish=1</url>
+        </repository>
+    </distributionManagement>
+
     <dependencies>
         <dependency>
             <groupId>org.springframework.boot</groupId>

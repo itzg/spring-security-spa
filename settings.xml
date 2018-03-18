@@ -20,8 +20,8 @@
 
     <servers>
         <server>
-            <id>bintray-itzgeoff-artifacts</id>
-            <username>itzgeoff</username>
+            <id>bintray-artifacts</id>
+            <username>${env.BINTRAY_USERNAME}</username>
             <password>${env.BINTRAY_API_KEY}</password>
         </server>
     </servers>
