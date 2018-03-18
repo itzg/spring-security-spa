@@ -34,6 +34,9 @@ jobs:
 
       - run: mvn -s settings.xml integration-test
 
+      - store_test_results:
+          path: target/surefire-reports
+
   release:
     <<: *defaults
 
