@@ -18,11 +18,13 @@ package me.itzg.spring.security.spa;
 
 import org.springframework.boot.autoconfigure.http.HttpMessageConverters;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.web.authentication.AbstractAuthenticationProcessingFilter;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
+import org.springframework.util.StringUtils;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -49,16 +51,26 @@ public class RequestBodyLoginFilter extends AbstractAuthenticationProcessingFilt
         setAuthenticationFailureHandler(new SimpleAuthenticationFailureHandler());
     }
 
+    @SuppressWarnings("RedundantThrows")
     @Override
-    public Authentication attemptAuthentication(HttpServletRequest httpServletRequest, HttpServletResponse httpServletResponse) throws AuthenticationException, IOException, ServletException {
+    public Authentication attemptAuthentication(
+            HttpServletRequest httpServletRequest,
+            HttpServletResponse httpServletResponse) throws AuthenticationException, IOException, ServletException {
         final Credentials credentials = converterHelper.parseBody(httpServletRequest, Credentials.class);
 
         if (credentials != null) {
+            if (!StringUtils.hasLength(credentials.getUsername())) {
+                throw new BadCredentialsException("Missing username");
+            }
+            if (!StringUtils.hasLength(credentials.getPassword())) {
+                throw new BadCredentialsException("Missing password");
+            }
+
             final UsernamePasswordAuthenticationToken token = new UsernamePasswordAuthenticationToken(credentials.getUsername(), credentials.getPassword());
 
             return authenticationManager.authenticate(token);
         } else {
-            return null;
+            throw new BadCredentialsException("Request body was invalid");
         }
     }
 }

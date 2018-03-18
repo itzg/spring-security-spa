@@ -17,6 +17,7 @@
 package me.itzg.spring.security.spa;
 
 import org.springframework.boot.autoconfigure.http.HttpMessageConverters;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
@@ -26,6 +27,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.provisioning.UserDetailsManager;
 import org.springframework.security.web.authentication.AbstractAuthenticationProcessingFilter;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
+import org.springframework.util.StringUtils;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -105,6 +107,13 @@ public class RegistrationFilter extends AbstractAuthenticationProcessingFilter {
         final Credentials registration = converterHelper.parseBody(req, Credentials.class);
 
         if (registration != null) {
+            if (!StringUtils.hasLength(registration.getUsername())) {
+                throw new BadCredentialsException("Missing username");
+            }
+            if (!StringUtils.hasLength(registration.getPassword())) {
+                throw new BadCredentialsException("Missing password");
+            }
+
             final UserDetails user = User.builder()
                     .username(registration.getUsername())
                     .password(registration.getPassword())
@@ -113,14 +122,21 @@ public class RegistrationFilter extends AbstractAuthenticationProcessingFilter {
                     .build();
 
             try {
+                if (userDetailsManager.userExists(user.getUsername())) {
+                    throw new RegistrationFailedException("Username is already in use");
+                }
                 userDetailsManager.createUser(user);
             } catch (Exception e) {
-                throw new RegistrationFailedException(user.getUsername(), e);
+                if (e instanceof RegistrationFailedException) {
+                    throw e;
+                }
+                throw new RegistrationFailedException("Unexpected failure", e);
             }
 
             return new UsernamePasswordAuthenticationToken(user.getUsername(), null, user.getAuthorities());
         }
-
-        return null;
+        else {
+            throw new RegistrationFailedException("Invalid request content");
+        }
     }
 }

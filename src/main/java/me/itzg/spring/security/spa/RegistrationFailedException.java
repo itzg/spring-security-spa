@@ -27,6 +27,10 @@ import org.springframework.security.core.AuthenticationException;
  */
 @SuppressWarnings("WeakerAccess")
 public class RegistrationFailedException extends AuthenticationException {
+    public RegistrationFailedException(String msg) {
+        super(msg);
+    }
+
     public RegistrationFailedException(String msg, Throwable t) {
         super(msg, t);
     }
