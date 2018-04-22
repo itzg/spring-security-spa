@@ -1,6 +1,26 @@
 This library provides Spring Security filters and supporting classes that streamline the use of
 authentication and registration within Single Page web Applications (SPA).
 
+## Installation
+
+Add the jcenter repository to your build, such as
+
+```xml
+<repository>
+  <snapshots>
+    <enabled>false</enabled>
+  </snapshots>
+  <id>jcenter</id>
+  <name>bintray</name>
+  <url>https://jcenter.bintray.com</url>
+</repository>
+```
+
+and the dependency to this library
+
+xml
+
+
 ## Usage
 
 This library provides a pair Spring Security filters that both accept a JSON payload via a POST:
