@@ -18,8 +18,13 @@ Add the jcenter repository to your build, such as
 
 and the dependency to this library
 
-xml
-
+```xml
+<dependency>
+  <groupId>me.itzg</groupId>
+  <artifactId>spring-security-spa</artifactId>
+  <version>1.0.1</version>
+</dependency>
+```
 
 ## Usage
 
@@ -34,7 +39,7 @@ The JSON payload must contain two fields:
 The library also provides `SimpleLogoutSuccessHandler` in order to conclude the logout process with just a 200 OK
 status code.
 
-The registration manager needs a [`UserDetailsManager`][1] in order to add the newly registered user. 
+The registration manager needs a [`UserDetailsManager`][1] in order to add the newly registered user.
 It also needs a [`PasswordEncoder`][2] to encode the registration's new password. The following example
 shows how to configure the filters in a way that consistently manages those beans between the filters
 and the Spring security layer.
