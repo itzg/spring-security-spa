@@ -27,6 +27,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.provisioning.UserDetailsManager;
 import org.springframework.security.web.authentication.AbstractAuthenticationProcessingFilter;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
+import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
 import javax.servlet.ServletException;
@@ -47,11 +48,21 @@ public class RegistrationFilter extends AbstractAuthenticationProcessingFilter {
 
     @SuppressWarnings("WeakerAccess")
     public static final int STATUS_CODE = HttpServletResponse.SC_CREATED;
+    public static final String DEFAULT_PROCESSES_URL = "/register";
 
-    private final UserDetailsManager userDetailsManager;
-    private final PasswordEncoder passwordEncoder;
-    private final ConverterHelper converterHelper;
+    private UserDetailsManager userDetailsManager;
+    private PasswordEncoder passwordEncoder;
+    private ConverterHelper converterHelper;
+    private HttpMessageConverters httpMessageConverters;
     private String[] initialRoles = new String[]{"USER"};
+
+    RegistrationFilter(String defaultFilterProcessesUrl) {
+        super(defaultFilterProcessesUrl);
+
+        setAuthenticationSuccessHandler(new SimpleAuthenticationSuccessHandler(STATUS_CODE));
+
+        setAuthenticationFailureHandler(new SimpleAuthenticationFailureHandler());
+    }
 
     /**
      * Creates a filter instance that processes registrations at the path /register.
@@ -62,21 +73,21 @@ public class RegistrationFilter extends AbstractAuthenticationProcessingFilter {
      */
     public RegistrationFilter(UserDetailsManager userDetailsManager, HttpMessageConverters httpMessageConverters,
                               PasswordEncoder passwordEncoder) {
-        this("/register", userDetailsManager, httpMessageConverters, passwordEncoder);
+        this(DEFAULT_PROCESSES_URL, userDetailsManager, httpMessageConverters, passwordEncoder);
     }
 
     /**
      * Creates a filter instance that processes registrations at the given path.
      *
-     * @param path                  the path where this filter will process registrations
+     * @param filterProcessesUrl    the path where this filter will process registrations
      * @param userDetailsManager    the new user will be added via this details manager
      * @param httpMessageConverters used for processing the credentials from the request body
      * @param passwordEncoder       used for encoding the new user's password
      */
     @SuppressWarnings("WeakerAccess")
-    public RegistrationFilter(String path, UserDetailsManager userDetailsManager, HttpMessageConverters httpMessageConverters,
+    public RegistrationFilter(String filterProcessesUrl, UserDetailsManager userDetailsManager, HttpMessageConverters httpMessageConverters,
                               PasswordEncoder passwordEncoder) {
-        super(new AntPathRequestMatcher(path, "POST"));
+        super(new AntPathRequestMatcher(filterProcessesUrl, "POST"));
         this.userDetailsManager = userDetailsManager;
         this.passwordEncoder = passwordEncoder;
         this.converterHelper = new ConverterHelper(httpMessageConverters);
@@ -84,6 +95,40 @@ public class RegistrationFilter extends AbstractAuthenticationProcessingFilter {
         setAuthenticationSuccessHandler(new SimpleAuthenticationSuccessHandler(STATUS_CODE));
 
         setAuthenticationFailureHandler(new SimpleAuthenticationFailureHandler());
+    }
+
+    @Override
+    public void afterPropertiesSet() {
+        super.afterPropertiesSet();
+
+        Assert.notNull(userDetailsManager, "UserDetailsManager bean needs to be defined");
+        Assert.notNull(passwordEncoder, "PasswordEncoder bean needs to be defined");
+        Assert.notNull(converterHelper, "HttpMessageConverters bean needs to be defined");
+    }
+
+    public void setUserDetailsManager(UserDetailsManager userDetailsManager) {
+        this.userDetailsManager = userDetailsManager;
+    }
+
+    public UserDetailsManager getUserDetailsManager() {
+        return userDetailsManager;
+    }
+
+    public void setPasswordEncoder(PasswordEncoder passwordEncoder) {
+        this.passwordEncoder = passwordEncoder;
+    }
+
+    public PasswordEncoder getPasswordEncoder() {
+        return passwordEncoder;
+    }
+
+    public void setHttpMessageConverters(HttpMessageConverters httpMessageConverters) {
+        this.converterHelper = new ConverterHelper(httpMessageConverters);
+        this.httpMessageConverters = httpMessageConverters;
+    }
+
+    public HttpMessageConverters getHttpMessageConverters() {
+        return httpMessageConverters;
     }
 
     /**
@@ -134,8 +179,7 @@ public class RegistrationFilter extends AbstractAuthenticationProcessingFilter {
             }
 
             return new UsernamePasswordAuthenticationToken(user.getUsername(), null, user.getAuthorities());
-        }
-        else {
+        } else {
             throw new RegistrationFailedException("Invalid request content");
         }
     }

@@ -24,6 +24,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.web.authentication.AbstractAuthenticationProcessingFilter;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
+import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
 import javax.servlet.ServletException;
@@ -39,16 +40,48 @@ import java.io.IOException;
  */
 public class RequestBodyLoginFilter extends AbstractAuthenticationProcessingFilter {
 
-    private final ConverterHelper converterHelper;
-    private AuthenticationManager authenticationManager;
+    public static final String DEFAULT_PROCESSES_URL = "/login";
+    private ConverterHelper converterHelper;
 
+    public RequestBodyLoginFilter(String defaultFilterProcessesUrl) {
+        super(defaultFilterProcessesUrl);
+        setAuthenticationSuccessHandler(new SimpleAuthenticationSuccessHandler(HttpServletResponse.SC_OK));
+        setAuthenticationFailureHandler(new SimpleAuthenticationFailureHandler());
+    }
+
+    /**
+     * Creates a login filter that processes the URI <code>/login</code>
+     * @param authenticationManager
+     * @param httpMessageConverters
+     */
     public RequestBodyLoginFilter(AuthenticationManager authenticationManager, HttpMessageConverters httpMessageConverters) {
-        super(new AntPathRequestMatcher("/login", "POST"));
-        this.authenticationManager = authenticationManager;
+        this(DEFAULT_PROCESSES_URL, authenticationManager, httpMessageConverters);
+    }
+
+    /**
+     *
+     * @param filterProcessesUrl the ant path where this filter processes login requests
+     * @param authenticationManager
+     * @param httpMessageConverters
+     */
+    public RequestBodyLoginFilter(String filterProcessesUrl, AuthenticationManager authenticationManager, HttpMessageConverters httpMessageConverters) {
+        super(new AntPathRequestMatcher(filterProcessesUrl, "POST"));
+        setAuthenticationManager(authenticationManager);
         converterHelper = new ConverterHelper(httpMessageConverters);
 
         setAuthenticationSuccessHandler(new SimpleAuthenticationSuccessHandler(HttpServletResponse.SC_OK));
         setAuthenticationFailureHandler(new SimpleAuthenticationFailureHandler());
+    }
+
+    @Override
+    public void afterPropertiesSet() {
+        super.afterPropertiesSet();
+
+        Assert.notNull(converterHelper, "HttpMessageConverters bean needs to be defined");
+    }
+
+    public void setHttpMessageConverters(HttpMessageConverters httpMessageConverters) {
+        this.converterHelper = new ConverterHelper(httpMessageConverters);
     }
 
     @SuppressWarnings("RedundantThrows")
@@ -68,7 +101,7 @@ public class RequestBodyLoginFilter extends AbstractAuthenticationProcessingFilt
 
             final UsernamePasswordAuthenticationToken token = new UsernamePasswordAuthenticationToken(credentials.getUsername(), credentials.getPassword());
 
-            return authenticationManager.authenticate(token);
+            return getAuthenticationManager().authenticate(token);
         } else {
             throw new BadCredentialsException("Request body was invalid");
         }

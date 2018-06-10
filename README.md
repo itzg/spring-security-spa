@@ -11,7 +11,7 @@ Add the jcenter repository to your build, such as
     <enabled>false</enabled>
   </snapshots>
   <id>jcenter</id>
-  <name>bintray</name>
+  <name>jcenter</name>
   <url>https://jcenter.bintray.com</url>
 </repository>
 ```
@@ -22,7 +22,7 @@ and the dependency to this library
 <dependency>
   <groupId>me.itzg</groupId>
   <artifactId>spring-security-spa</artifactId>
-  <version>1.0.1</version>
+  <version>1.1.0</version>
 </dependency>
 ```
 
@@ -47,18 +47,11 @@ and the Spring security layer.
 ## Example
 
 ```java
-import me.itzg.spring.security.spa.RegistrationFilter;
-import me.itzg.spring.security.spa.RequestBodyLoginFilter;
+import me.itzg.spring.security.spa.SinglePageAppConfigurer;
 import me.itzg.spring.security.spa.SimpleLogoutSuccessHandler;
 
 @Configuration
 public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
-    private HttpMessageConverters httpMessageConverters;
-
-    @Autowired
-    public WebSecurityConfig(HttpMessageConverters httpMessageConverters) {
-        this.httpMessageConverters = httpMessageConverters;
-    }
 
     @Override
     protected void configure(HttpSecurity http) throws Exception {
@@ -69,16 +62,17 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
                 .and().logout().logoutSuccessHandler(new SimpleLogoutSuccessHandler())
                 .and().csrf().disable() // CSRF is less helpful (and a little annoying) with single page apps
 
-                .addFilterBefore(new RegistrationFilter(userDetailsManager(), httpMessageConverters, passwordEncoder()),
-                        UsernamePasswordAuthenticationFilter.class)
-                .addFilterBefore(new RequestBodyLoginFilter(authenticationManager(), httpMessageConverters),
-                        UsernamePasswordAuthenticationFilter.class);
+                .and().apply(new SinglePageAppConfigurer<>()).registerUrl("/register/local").loginUrl("/login/local")
+                ;
     }
 
     @Override
     protected void configure(AuthenticationManagerBuilder auth) throws Exception {
-        auth.apply(new SecurityConfigurer<InMemoryUserDetailsManagerConfigurer<AuthenticationManagerBuilder>>())
-                .passwordEncoder(passwordEncoder());
+        auth
+                .userDetailsService(userDetailsManager())
+                .passwordEncoder(passwordEncoder())
+                .and()
+                .inMemoryAuthentication();
     }
 
     @Bean
@@ -89,14 +83,6 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
     @Bean
     public UserDetailsManager userDetailsManager() {
         return new InMemoryUserDetailsManager();
-    }
-
-    private class SecurityConfigurer<C extends UserDetailsManagerConfigurer<AuthenticationManagerBuilder, C>>
-            extends UserDetailsManagerConfigurer<AuthenticationManagerBuilder, C> {
-
-        SecurityConfigurer() {
-            super(userDetailsManager());
-        }
     }
 }
 ```
